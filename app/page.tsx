@@ -22,10 +22,7 @@ export default function HomePage() {
                 </a>
               </li>
               <li>
-                <a
-                  href="#how-heading"
-                  className="hover:text-ink transition-colors"
-                >
+                <a href="#how-heading" className="hover:text-ink transition-colors">
                   How it works
                 </a>
               </li>
@@ -46,8 +43,13 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="w-full lg:w-auto flex justify-center rounded-2xl border border-line bg-surface shadow-card px-6 py-10 sm:px-12">
-            <SpeedTest />
+          <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
+            <div className="w-full lg:w-auto flex justify-center rounded-2xl border border-line bg-surface shadow-card px-6 py-10 sm:px-12">
+              <SpeedTest />
+            </div>
+            <div className="w-full lg:w-80 lg:mt-1">
+              <NetworkInfo />
+            </div>
           </div>
         </section>
 
@@ -56,10 +58,7 @@ export default function HomePage() {
 
       <footer className="border-t border-line bg-surface">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-inkFaint">
-          <p>
-            &copy; {new Date().getFullYear()} PulseCheck. Not affiliated with
-            any ISP.
-          </p>
+          <p>&copy; {new Date().getFullYear()} PulseCheck. Not affiliated with any ISP.</p>
           <p>Built with Next.js.</p>
         </div>
       </footer>

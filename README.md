@@ -1,5 +1,39 @@
 # PulseCheck — Internet Speed Test (Next.js)
 
+## v3 — switched to Cloudflare's public speed test network
+
+**The core problem with v1/v2:** every measurement ran against this app's
+own server. If that server isn't geographically close to the visitor, or
+doesn't have serious bandwidth behind it, results will be meaningfully off
+from Speedtest.net/fast.com — those services work well specifically
+*because* they auto-select from large networks of nearby servers.
+
+**The fix:** this version uses [`@cloudflare/speedtest`](https://github.com/cloudflare/speedtest),
+Cloudflare's own official, MIT-licensed npm package — the same engine
+that powers speed.cloudflare.com. It measures directly from the visitor's
+browser against Cloudflare's edge network (300+ cities), auto-selecting the
+nearest one, with no API key and no backend involvement. This is the same
+category of "public API" as Speedtest.net's or fast.com's own
+infrastructure — a real, independently-operated network, not something we
+built.
+
+- Primary engine: `lib/speedtest.ts` → `runCloudflareSpeedTest()`
+- Automatic fallback: if Cloudflare's domains are blocked on a given
+  network (some corporate firewalls block third-party speed-test traffic),
+  the app transparently falls back to testing against its own `/api/*`
+  routes instead — see `runFallbackSpeedTest()` in the same file. The UI
+  shows which engine actually ran after each test.
+- The `/api/ping`, `/api/download`, `/api/upload` routes are **kept** for
+  this fallback path — they're no longer the primary measurement path, but
+  removing them would mean the tool breaks entirely on networks that block
+  Cloudflare's test domains.
+
+Expect results now to track much closer to Speedtest.net/fast.com. They
+still won't be identical — different providers land on different servers
+and network paths — but the days of 1000+ Mbps on a 25 Mbps connection are
+over as long as you're testing over a real internet connection (see below
+for the one case that's still not fixable in code).
+
 ## v2 changes
 
 - **Redesigned** with an icon-based, indigo/violet/amber color system
@@ -43,11 +77,10 @@ jitter, plus IP/ISP/location lookup — with SEO built in from the ground up.
 
 Every number this site shows is a genuine measurement:
 
-- **Ping / jitter** — timed round-trips to `/api/ping`.
-- **Download** — streams randomized, incompressible bytes from
-  `/api/download` and measures throughput as the browser reads the stream.
-- **Upload** — sends randomized payloads to `/api/upload`, which counts
-  bytes received.
+- **Ping / jitter / download / upload** — measured against Cloudflare's
+  public edge network via `@cloudflare/speedtest` (see "v3" above), with
+  this app's own `/api/ping`, `/api/download`, `/api/upload` routes as an
+  automatic fallback if that network is unreachable.
 - **IP / ISP / location** — read from request headers + a third-party geo
   API (`ipapi.co`, free tier, no key needed).
 

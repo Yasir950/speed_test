@@ -1,10 +1,4 @@
-import {
-  Activity,
-  Download,
-  Upload,
-  ShieldAlert,
-  type LucideIcon,
-} from "lucide-react";
+import { Activity, Download, Upload, ShieldAlert, type LucideIcon } from "lucide-react";
 
 interface Field {
   icon: LucideIcon;
@@ -36,10 +30,7 @@ const FIELDS: Field[] = [
 
 export default function HowItWorks() {
   return (
-    <section
-      aria-labelledby="how-heading"
-      className="max-w-4xl mx-auto px-6 py-16"
-    >
+    <section aria-labelledby="how-heading" className="max-w-4xl mx-auto px-6 py-16">
       <h2
         id="how-heading"
         className="font-display text-2xl sm:text-3xl font-semibold text-ink mb-8"
@@ -49,15 +40,35 @@ export default function HowItWorks() {
       <div className="grid sm:grid-cols-3 gap-6 mb-10">
         {FIELDS.map((f) => (
           <div key={f.title} className="flex flex-col gap-3">
-            <span
-              className={`w-9 h-9 rounded-lg flex items-center justify-center ${f.accent}`}
-            >
+            <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${f.accent}`}>
               <f.icon size={17} strokeWidth={2.25} />
             </span>
             <h3 className="font-display font-semibold text-ink">{f.title}</h3>
             <p className="text-sm text-inkSoft leading-relaxed">{f.body}</p>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-line bg-surface shadow-card p-6 flex gap-4">
+        <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-danger/10 text-danger shrink-0">
+          <ShieldAlert size={17} strokeWidth={2.25} />
+        </span>
+        <div>
+          <h3 className="font-display font-semibold text-ink mb-1">
+            Why results can look too high (or too low)
+          </h3>
+          <p className="text-sm text-inkSoft leading-relaxed">
+            Speed test numbers only reflect the path they actually travel.
+            Testing over <code className="font-mono text-xs bg-paperDim px-1 py-0.5 rounded">localhost</code>{" "}
+            or a private network never reaches your real ISP connection, so
+            results can look dramatically inflated compared to your actual
+            plan speed. Once this is deployed to a live server and tested
+            over your real internet connection, numbers will reflect your
+            actual bandwidth — still expect some run-to-run variance, since
+            Wi-Fi interference, other active devices, and ISP peak-hour load
+            all shift results.
+          </p>
+        </div>
       </div>
     </section>
   );

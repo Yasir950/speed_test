@@ -8,18 +8,20 @@ export default function ResultsExplainer() {
       <Info size={18} className="text-signal shrink-0 mt-0.5" strokeWidth={2.25} />
       <div className="text-sm text-inkSoft leading-relaxed">
         <p className="text-ink font-medium mb-1">
-          Why might this differ from Speedtest.net, fast.com, or your ISP's
+          Why might this differ from Speedtest.net, fast.com, or your ISP&apos;s
           own tool?
         </p>
         <p>
-          A few honest reasons, not a flaw in either tool: those services
-          often run a server hosted directly inside your ISP's own network
-          (sometimes in your own city), which shaves off distance and
-          latency ours can't match unless it's deployed on similar
-          infrastructure. Test servers, number of parallel connections, and
-          time-of-day network congestion all shift the number too — running
-          any speed test twice, five minutes apart, can itself show a
-          meaningfully different result.
+          This test measures against Cloudflare&apos;s public network — the
+          same infrastructure behind speed.cloudflare.com — auto-selecting
+          the nearest of its 300+ global edge locations, similar to how
+          Speedtest.net picks a nearby Ookla server and fast.com uses
+          Netflix&apos;s CDN. Different providers still land on different
+          servers, network paths, and peering arrangements, so a few Mbps of
+          variation between tools is normal and expected, not a sign either
+          one is wrong. Time-of-day congestion and Wi-Fi conditions shift
+          results too — running any speed test twice, five minutes apart,
+          can itself show a meaningfully different number.
         </p>
       </div>
     </div>

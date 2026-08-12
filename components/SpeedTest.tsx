@@ -1,18 +1,19 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Activity, Waves, Download, Upload, RotateCw } from "lucide-react";
+import { Activity, Waves, Download, Upload, RotateCw, Globe } from "lucide-react";
 import SignalGauge, { type GaugePhase } from "./SignalGauge";
 import ResultCard from "./ResultCard";
 import ResultsExplainer from "./ResultsExplainer";
-import { measureDownload, measureUpload, measurePing } from "@/lib/speedtest";
+import { runSpeedTest, type FullSpeedTestResult } from "@/lib/speedtest";
 
-interface Results {
-  pingMs: number | null;
-  jitterMs: number | null;
-  downloadMbps: number | null;
-  uploadMbps: number | null;
-}
+const EMPTY_RESULT: FullSpeedTestResult = {
+  pingMs: null,
+  jitterMs: null,
+  downloadMbps: null,
+  uploadMbps: null,
+  engine: "cloudflare",
+};
 
 const PHASE_LABEL: Record<GaugePhase, string> = {
   idle: "Ready when you are",
@@ -24,76 +25,31 @@ const PHASE_LABEL: Record<GaugePhase, string> = {
 
 export default function SpeedTest() {
   const [phase, setPhase] = useState<GaugePhase>("idle");
-  const [liveValue, setLiveValue] = useState(0);
   const [fraction, setFraction] = useState(0);
   const [running, setRunning] = useState(false);
-  const [results, setResults] = useState<Results>({
-    pingMs: null,
-    jitterMs: null,
-    downloadMbps: null,
-    uploadMbps: null,
-  });
+  const [results, setResults] = useState<FullSpeedTestResult>(EMPTY_RESULT);
   const runToken = useRef(0);
 
   const runTest = useCallback(async () => {
     const token = ++runToken.current;
     setRunning(true);
-    setResults({
-      pingMs: null,
-      jitterMs: null,
-      downloadMbps: null,
-      uploadMbps: null,
-    });
+    setResults(EMPTY_RESULT);
+    setPhase("ping");
+    setFraction(0);
 
     try {
-      // 1. Ping + jitter
-      setPhase("ping");
-      setFraction(0);
-      setLiveValue(0);
-      const pingResult = await measurePing(8);
-      if (runToken.current !== token) return;
-      setLiveValue(pingResult.pingMs);
-      setFraction(1);
-      setResults((r) => ({
-        ...r,
-        pingMs: pingResult.pingMs,
-        jitterMs: pingResult.jitterMs,
-      }));
-      await new Promise((res) => setTimeout(res, 350));
-
-      // 2. Download throughput
-      if (runToken.current !== token) return;
-      setPhase("download");
-      setFraction(0);
-      setLiveValue(0);
-      const downloadResult = await measureDownload((mbps, frac) => {
+      const final = await runSpeedTest((update) => {
         if (runToken.current !== token) return;
-        setLiveValue(mbps);
-        setFraction(frac);
+        setResults(update.result);
+        setFraction(update.fraction);
+        setPhase(update.phase === "latency" ? "ping" : update.phase);
       });
       if (runToken.current !== token) return;
-      setResults((r) => ({ ...r, downloadMbps: downloadResult.mbps }));
-      await new Promise((res) => setTimeout(res, 350));
-
-      // 3. Upload throughput
-      if (runToken.current !== token) return;
-      setPhase("upload");
-      setFraction(0);
-      setLiveValue(0);
-      const uploadResult = await measureUpload((mbps, frac) => {
-        if (runToken.current !== token) return;
-        setLiveValue(mbps);
-        setFraction(frac);
-      });
-      if (runToken.current !== token) return;
-      setResults((r) => ({ ...r, uploadMbps: uploadResult.mbps }));
-
+      setResults(final);
       setPhase("done");
       setFraction(1);
     } catch {
-      if (runToken.current === token) {
-        setPhase("idle");
-      }
+      if (runToken.current === token) setPhase("idle");
     } finally {
       if (runToken.current === token) setRunning(false);
     }
@@ -103,9 +59,11 @@ export default function SpeedTest() {
   const gaugeValue =
     phase === "idle"
       ? 0
-      : phase === "done"
-        ? (results.downloadMbps ?? 0)
-        : liveValue;
+      : phase === "ping"
+      ? results.pingMs ?? 0
+      : phase === "download" || phase === "done"
+      ? results.downloadMbps ?? 0
+      : results.uploadMbps ?? 0;
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -126,8 +84,8 @@ export default function SpeedTest() {
         {running
           ? "Testing…"
           : phase === "done"
-            ? "Run again"
-            : "Start speed test"}
+          ? "Run again"
+          : "Start speed test"}
       </button>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl">
@@ -148,9 +106,7 @@ export default function SpeedTest() {
         <ResultCard
           label="Download"
           value={
-            results.downloadMbps !== null
-              ? results.downloadMbps.toFixed(1)
-              : "—"
+            results.downloadMbps !== null ? results.downloadMbps.toFixed(1) : "—"
           }
           unit="Mbps"
           accent="signal"
@@ -158,14 +114,23 @@ export default function SpeedTest() {
         />
         <ResultCard
           label="Upload"
-          value={
-            results.uploadMbps !== null ? results.uploadMbps.toFixed(1) : "—"
-          }
+          value={results.uploadMbps !== null ? results.uploadMbps.toFixed(1) : "—"}
           unit="Mbps"
           accent="violet"
           icon={Upload}
         />
       </div>
+
+      {phase === "done" && (
+        <div className="w-full max-w-2xl flex items-center gap-2 text-xs text-inkFaint -mt-2">
+          <Globe size={13} />
+          {results.engine === "cloudflare"
+            ? "Measured against Cloudflare's global network (nearest edge auto-selected)."
+            : "Cloudflare's network was unreachable — measured against this site's own server instead."}
+        </div>
+      )}
+
+      {phase === "done" && <ResultsExplainer />}
     </div>
   );
 }
