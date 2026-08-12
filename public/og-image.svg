@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#EEF1F4"/>
+  <circle cx="220" cy="315" r="40" fill="#0B5FFF"/>
+  <circle cx="220" cy="315" r="90" fill="none" stroke="#0B5FFF" stroke-width="6" opacity="0.5"/>
+  <circle cx="220" cy="315" r="140" fill="none" stroke="#0B5FFF" stroke-width="6" opacity="0.25"/>
+  <text x="420" y="290" font-family="Arial, sans-serif" font-size="56" font-weight="700" fill="#10151B">PulseCheck</text>
+  <text x="420" y="345" font-family="Arial, sans-serif" font-size="30" fill="#4A5568">Internet Speed Test</text>
+  <text x="420" y="400" font-family="Arial, sans-serif" font-size="22" fill="#4A5568">Download &#8226; Upload &#8226; Ping &#8226; Jitter</text>
+</svg>
