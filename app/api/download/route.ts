@@ -4,8 +4,8 @@ import { randomBytes } from "crypto";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const MAX_BYTES = 100 * 1024 * 1024; // 100MB hard cap per request
-const DEFAULT_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_BYTES = 25 * 1024 * 1024; // 25MB hard cap per request — keeps well within typical serverless function duration limits (e.g. Vercel Hobby's default 10s) even on slow connections
+const DEFAULT_BYTES = 5 * 1024 * 1024; // 5MB
 const CHUNK_SIZE = 64 * 1024; // 64KB per pushed chunk
 
 export async function GET(req: NextRequest) {

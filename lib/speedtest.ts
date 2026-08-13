@@ -16,7 +16,7 @@
 // we automatically fall back to testing against this app's own /api routes
 // further down in this file, so the tool still works either way.
 
-import SpeedTestEngine, { type MeasurementType } from "@cloudflare/speedtest";
+import SpeedTestEngine, { type MeasurementConfig } from "@cloudflare/speedtest";
 
 export interface FullSpeedTestResult {
   pingMs: number | null;
@@ -34,8 +34,6 @@ export interface SpeedTestUpdate {
   fraction: number; // 0..1 rough progress through the whole test
 }
 
-const CF_PHASE_ORDER: MeasurementType[] = ["latency", "download", "upload"];
-
 function summaryToResult(
   summary: { latency?: number; jitter?: number; download?: number; upload?: number },
   engine: "cloudflare" | "fallback"
@@ -49,6 +47,51 @@ function summaryToResult(
   };
 }
 
+// Cloudflare's own DEFAULT config interleaves phases —
+// latency → download → latency → download → latency → upload → latency →
+// packetLoss (WebRTC/TURN) → upload → download → upload → download → ...
+// That's the right shape for their own diagnostic dashboard, but it makes a
+// single "current phase" UI indicator flip between download/upload/latency
+// many times a second, which is what was causing the flickering: the gauge's
+// color and label were following that raw phase signal directly.
+//
+// This config runs each phase as one clean block instead — all latency
+// samples, then all download rounds, then all upload rounds — which is what
+// this app's UI actually needs. It also drops the WebRTC-based packetLoss
+// step entirely: it requires a TURN/ICE handshake that can hang for many
+// seconds on networks that restrict WebRTC (some corporate and mobile
+// networks do), and this app doesn't display a packet-loss metric anyway,
+// so it was pure downside here.
+const CUSTOM_MEASUREMENTS: MeasurementConfig[] = [
+  { type: "latency", numPackets: 20 },
+  { type: "download", bytes: 1e5, count: 1, bypassMinDuration: true }, // warm-up, discarded by the engine's own min-duration filter
+  { type: "download", bytes: 1e6, count: 8 },
+  { type: "download", bytes: 1e7, count: 6 },
+  { type: "download", bytes: 25e6, count: 4 },
+  { type: "download", bytes: 1e8, count: 2 },
+  { type: "upload", bytes: 1e5, count: 8 },
+  { type: "upload", bytes: 1e6, count: 6 },
+  { type: "upload", bytes: 1e7, count: 4 },
+  { type: "upload", bytes: 25e6, count: 2 },
+];
+const TOTAL_STEPS = CUSTOM_MEASUREMENTS.length;
+
+// Cloudflare's own bandwidthFinishRequestDuration (1000ms, kept as default
+// below) already stops a bandwidth phase early once a round takes over a
+// second — so a slow connection doesn't sit through every larger payload
+// size, and total test time stays reasonable regardless of connection speed.
+
+// UI updates are throttled to this interval regardless of how often the
+// engine reports new samples (it can fire many times per second during a
+// bandwidth phase) — smooth animation reads as "live," but 20+ re-renders a
+// second reads as flicker.
+const UI_UPDATE_INTERVAL_MS = 150;
+
+// If the whole test hasn't finished in this long, treat it as stuck (e.g.
+// Cloudflare's domains reachable but unusually slow/degraded on this
+// network) and fall back rather than leaving the UI stalled indefinitely.
+const HARD_TIMEOUT_MS = 40_000;
+
 /**
  * Runs a full test (latency, download, upload) against Cloudflare's public
  * network. Resolves with the final result; calls onUpdate as partial
@@ -58,32 +101,57 @@ export function runCloudflareSpeedTest(
   onUpdate: (update: SpeedTestUpdate) => void
 ): Promise<FullSpeedTestResult> {
   return new Promise((resolve, reject) => {
-    const engine = new SpeedTestEngine({ autoStart: false });
+    const engine = new SpeedTestEngine({
+      autoStart: false,
+      measurements: CUSTOM_MEASUREMENTS,
+      measureDownloadLoadedLatency: false,
+      measureUploadLoadedLatency: false,
+    });
+
     let currentPhase: SpeedTestPhase = "latency";
     let currentStepIndex = 0;
+    let lastEmit = 0;
+    let settled = false;
+
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Cloudflare speed test timed out"));
+    }, HARD_TIMEOUT_MS);
+
+    function emit(force = false) {
+      const now = performance.now();
+      if (!force && now - lastEmit < UI_UPDATE_INTERVAL_MS) return;
+      lastEmit = now;
+      const summary = engine.results.getSummary();
+      onUpdate({
+        phase: currentPhase,
+        result: summaryToResult(summary, "cloudflare"),
+        fraction: Math.min(1, currentStepIndex / TOTAL_STEPS),
+      });
+    }
 
     engine.onPhaseChange = ({ measurementId, measurement }) => {
       currentStepIndex = measurementId;
       if (measurement.type === "download") currentPhase = "download";
       else if (measurement.type === "upload") currentPhase = "upload";
       else currentPhase = "latency";
+      emit(true); // phase boundaries always render immediately, no throttle
     };
 
-    engine.onResultsChange = () => {
-      const summary = engine.results.getSummary();
-      const totalSteps = CF_PHASE_ORDER.length * 4; // rough estimate for a progress bar
-      onUpdate({
-        phase: currentPhase,
-        result: summaryToResult(summary, "cloudflare"),
-        fraction: Math.min(1, currentStepIndex / totalSteps),
-      });
-    };
+    engine.onResultsChange = () => emit(false);
 
     engine.onError = (message: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
       reject(new Error(`Cloudflare speed test failed: ${message}`));
     };
 
     engine.onFinish = (results) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
       resolve(summaryToResult(results.getSummary(), "cloudflare"));
     };
 

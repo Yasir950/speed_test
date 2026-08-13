@@ -1,5 +1,41 @@
 # PulseCheck — Internet Speed Test (Next.js)
 
+## v4 — fixed flickering UI (found via deployed-site inspection)
+
+**Root cause, confirmed by reading the actual installed package source:**
+Cloudflare's *default* measurement plan doesn't run latency, then download,
+then upload as separate blocks — it interleaves them (latency → download →
+latency → download → latency → upload → latency → **packetLoss via WebRTC**
+→ upload → download → upload → download...) for its own diagnostic
+dashboard. The UI's phase indicator (the gauge's color/label) was following
+that raw signal directly, so it was genuinely flipping between ping/
+download/upload dozens of times over the course of one test — that's the
+flicker, not a rendering bug.
+
+Fixed in `lib/speedtest.ts`:
+
+- **Custom, non-interleaved measurement config** — all latency samples,
+  then all download rounds, then all upload rounds, as one clean block
+  each. The self-limiting behavior that keeps test time reasonable on slow
+  connections (`bandwidthFinishRequestDuration`) is untouched.
+- **Dropped the WebRTC/TURN-based packet-loss step** entirely — it's not a
+  metric this app displays, it requires an ICE/TURN handshake that can hang
+  for many seconds on networks that restrict WebRTC, and removing it also
+  removes one interleaving source.
+- **Throttled UI updates** to ~150ms intervals during bandwidth phases
+  (the engine can report new samples many times a second; re-rendering the
+  gauge that often reads as flicker even without a phase change). Phase
+  *changes* still render immediately and bypass the throttle, so the UI
+  feels responsive at transitions.
+- **Hard 40s timeout** — if Cloudflare's network is reachable but unusually
+  degraded and the test stalls, the app now falls back to its own server
+  rather than leaving the UI stuck indefinitely.
+- **Reduced the fallback server's max payload** from 100MB to 25MB per
+  request — large enough to measure accurately, small enough to stay well
+  within typical serverless function duration limits (e.g. Vercel Hobby's
+  default 10s), which could otherwise silently truncate a download mid-test
+  on a slow connection.
+
 ## v3 — switched to Cloudflare's public speed test network
 
 **The core problem with v1/v2:** every measurement ran against this app's
