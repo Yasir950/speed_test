@@ -23,7 +23,7 @@ const mono = JetBrains_Mono({
 });
 
 // Replace with your real production domain before deploying.
-const SITE_URL = "https://www.pulsecheck-speedtest.com";
+const SITE_URL = "https://speed-test-nine-sepia.vercel.app/";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -119,11 +119,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+    >
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(softwareAppJsonLd),
+          }}
         />
       </head>
       <body className="font-body antialiased min-h-screen">{children}</body>
