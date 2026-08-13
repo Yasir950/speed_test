@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PulseCheck Speed Test",
-    short_name: "PulseCheck",
+    name: "SpeedoTest Speed Test",
+    short_name: "SpeedoTest",
     description:
       "Free internet speed test measuring download speed, upload speed, ping, and jitter.",
     start_url: "/",
