@@ -1,5 +1,32 @@
 # PulseCheck — Internet Speed Test (Next.js)
 
+## v5 — rebrand to SpeedoTest + real tab icon + a real bug fix
+
+- **Tab icon**: added `app/icon.svg` using your actual logo mark (the
+  speedometer arc + download/upload arrows) — Next.js auto-detects this
+  file and injects the `<link rel="icon">` tag itself, no manual metadata
+  needed. Only the icon mark is used, not the full lockup with the
+  "SpeedoTest / INTERNET SPEED METRICS" wordmark — favicons render at
+  16–32px, where text like that is illegible.
+- **Fixed a real routing bug this surfaced**: the project already had a
+  `public/icon.svg` (referenced by the PWA manifest). Next.js throws "A
+  conflicting public file and page file was found for path /icon.svg" when
+  both exist — a hard 500 error on that route, not a cosmetic issue. Fixed
+  by renaming the PWA-manifest copy to `public/pwa-icon.svg` and updating
+  `app/manifest.ts` to match. Confirmed both routes return 200 after the
+  fix, verified via a live dev server, not just a successful build.
+- **Rebrand consistency**: your pasted `layout.tsx` had the site titled
+  "SpeedoTest" but the JSON-LD, Open Graph site name, and author fields
+  still said "PulseCheck" — leftover from the project's original name.
+  Updated all of it (JSON-LD, manifest, header wordmark, footer, this
+  README) to "SpeedoTest" consistently. Also swapped the header's generic
+  lightning-bolt icon for your actual logo mark.
+- **Removed fabricated review schema**: the `SoftwareApplication` JSON-LD
+  had a placeholder `aggregateRating` (4.8 stars, 1204 ratings) left over
+  from an earlier draft. This is fake data, and Google explicitly
+  prohibits fake review/rating markup — sites have received manual
+  penalties for exactly this. Removed it entirely.
+
 ## v4 — fixed flickering UI (found via deployed-site inspection)
 
 **Root cause, confirmed by reading the actual installed package source:**

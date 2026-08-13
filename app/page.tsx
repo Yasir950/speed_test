@@ -1,4 +1,4 @@
-import { Zap } from "lucide-react";
+import Image from "next/image";
 import SpeedTest from "@/components/SpeedTest";
 import NetworkInfo from "@/components/NetworkInfo";
 import HowItWorks from "@/components/HowItWorks";
@@ -8,11 +8,17 @@ export default function HomePage() {
     <>
       <header className="border-b border-line bg-surface/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="font-display font-semibold text-lg tracking-tight text-ink flex items-center gap-1.5">
-            <span className="w-7 h-7 rounded-lg bg-grad-signal flex items-center justify-center">
-              <Zap size={15} className="text-white" fill="white" />
+          <span className="font-display font-bold text-xl tracking-tight text-ink flex items-center">
+            <span className="w-7 h-7 flex items-center justify-center mr-2">
+              <Image
+                src="/pwa-icon.svg"
+                alt=""
+                width={28}
+                height={28}
+                priority
+              />
             </span>
-            Pulse<span className="text-signal">Check</span>
+            Speedo<span className="text-signal">Test</span>
           </span>
           <nav aria-label="Primary">
             <ul className="flex gap-6 text-sm text-inkSoft font-body">
@@ -22,7 +28,10 @@ export default function HomePage() {
                 </a>
               </li>
               <li>
-                <a href="#how-heading" className="hover:text-ink transition-colors">
+                <a
+                  href="#how-heading"
+                  className="hover:text-ink transition-colors"
+                >
                   How it works
                 </a>
               </li>
@@ -58,8 +67,7 @@ export default function HomePage() {
 
       <footer className="border-t border-line bg-surface">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-inkFaint">
-          <p>&copy; {new Date().getFullYear()} PulseCheck. Not affiliated with any ISP.</p>
-          <p>Built with Next.js.</p>
+          <p>&copy; {new Date().getFullYear()} SpeedoTest</p>
         </div>
       </footer>
     </>

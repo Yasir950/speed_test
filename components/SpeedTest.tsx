@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Activity, Waves, Download, Upload, RotateCw, Globe } from "lucide-react";
+import {
+  Activity,
+  Waves,
+  Download,
+  Upload,
+  RotateCw,
+  Globe,
+} from "lucide-react";
 import SignalGauge, { type GaugePhase } from "./SignalGauge";
 import ResultCard from "./ResultCard";
 import ResultsExplainer from "./ResultsExplainer";
@@ -60,10 +67,10 @@ export default function SpeedTest() {
     phase === "idle"
       ? 0
       : phase === "ping"
-      ? results.pingMs ?? 0
-      : phase === "download" || phase === "done"
-      ? results.downloadMbps ?? 0
-      : results.uploadMbps ?? 0;
+        ? (results.pingMs ?? 0)
+        : phase === "download" || phase === "done"
+          ? (results.downloadMbps ?? 0)
+          : (results.uploadMbps ?? 0);
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -84,8 +91,8 @@ export default function SpeedTest() {
         {running
           ? "Testing…"
           : phase === "done"
-          ? "Run again"
-          : "Start speed test"}
+            ? "Run again"
+            : "Start speed test"}
       </button>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl">
@@ -106,7 +113,9 @@ export default function SpeedTest() {
         <ResultCard
           label="Download"
           value={
-            results.downloadMbps !== null ? results.downloadMbps.toFixed(1) : "—"
+            results.downloadMbps !== null
+              ? results.downloadMbps.toFixed(1)
+              : "—"
           }
           unit="Mbps"
           accent="signal"
@@ -114,7 +123,9 @@ export default function SpeedTest() {
         />
         <ResultCard
           label="Upload"
-          value={results.uploadMbps !== null ? results.uploadMbps.toFixed(1) : "—"}
+          value={
+            results.uploadMbps !== null ? results.uploadMbps.toFixed(1) : "—"
+          }
           unit="Mbps"
           accent="violet"
           icon={Upload}
